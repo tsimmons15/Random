@@ -1,1 +1,180 @@
+#!/usr/bin/perl
 
+use Socket;
+
+#open(fh, "<", "zoology.txt") or die("Unable to open file, $!\n");
+
+#Alternative
+die("Unable to open file, $!\n") unless(open(fh, "<", "zoology.txt"));
+
+#die() is for unrecoverable errors. warn displays a prompt without killing the script
+#open(fh, "<", "zoology.txt") or warn("Unable to open file, $!\n");
+
+
+print("File opened successfully?\n");
+while (<fh>){ # $line = <fh>){ #<fh>) {
+	# default value variable
+	#print("$_\n");
+	# Equivalently:
+	#print("$line\n");
+	print;
+}
+
+#while(<STDIN>){ # Since STDIN/STDOUT are treated as file streams
+	#Echoes user input
+#	print("$_\n");
+#}
+#<> is the null filehandle, it will process through args and attempt to open them for reading
+# If there are no args, ARGV[0] is set to '-' which tells <> to switch to STDIN
+# If non-file args are passed in it can cause issues because it could attempt to try to read
+#  these non-files.
+#while (<>) {
+#	print("$_\n");
+#}
+
+# Quote-like operator, similar to qq// and q// from yesterday. Handles shell expansion; insides are
+#  treated as shell commands, executed and results are returned.
+$result = qx/ls/;
+@result = qx/ls/;
+print("$result\n");
+print("$result[0]\n");
+
+$curr = tell(fh);
+print("Currently at position $curr in file.\n");
+seek(fh, 0, 0);
+$curr = tell(fh);
+print("Now at position $curr in file.\n");
+$cont = <STDIN>;
+
+while (defined($char = getc(fh))) {
+	print("$char");
+}
+
+$cont = <STDIN>;
+
+seek(fh, 0, 0);
+#read() is a binary input that returns the number of bytes read in
+# using 1 as read length gives similar result to using getc().
+while(read(fh, $char, 1)) {
+	print("$char");
+}
+print STDERR "Finished displaying via read\n";
+
+# File locks mean we generally want to close a file immediately after opening
+# Especially true when writing. Writing generally happens in batches, easiest batch is when
+# file is closed.
+close(fh);
+
+$dir = "~/";
+#glob() is similar in function to <$dir>
+# can accept space-delimited collections of directories.
+@stack = glob( $dir."*" );
+# stack-recursion visit/display file structure
+#init the stack
+#foreach (@entries) {
+#	unshift(@stack, $_);
+#}
+$depth = 1;
+$tab = "\t";
+$last = "";
+print(glob("$dir")."\n");
+do {
+	$curr = shift(@stack);
+	
+	# Issue still exists when we need to jump more than one directory level
+	# Outside the scope of this example, and my current interest in the problem.
+	if (not($last) or $curr =~ /$last/) {
+		$depth++;	
+	} elsif (-d $curr) {
+		$depth--;
+	}
+
+	if (-d $curr) {
+		$curr = $curr."/*";
+		#Since this is a directory, we want to depth-first visit its members
+		foreach $child (glob($curr)) {
+			unshift(@stack, $child);
+		}		
+	}		
+
+	print(($tab x $depth)."$curr\n");
+
+
+	$last = $curr;
+} while (@stack);
+
+$line = "terse food foosball subeo footnote terfoot canic footbridge";
+$save = $line;
+
+while ($line =~ /^foo.*$/) {
+	print("Before: $`\n");
+	print("Matched: $&\n");
+	print("After: $'\n");
+	$line = $';
+}
+
+$save =~ s/foo.*?/begone/;
+print("$save\n");
+$save =~ s/foo/begone/g;
+print("$save\n");
+
+$string = 'the cat sat on the mat.';
+print("$string\n");
+$string =~ tr/a-z/b-za/d;
+print("$string\n");
+
+$string = join('', ("a".."z"));
+print("$string\n");
+$string =~ tr/asu/b/d;
+print("$string\n");
+
+$string = "Cats go catatonic\nWhen given Catnip";
+@matches = $string =~ /\bcat(\S*)\b/gi;
+print("$string\n@matches\n");
+
+$matches = "Python!";
+if ($matches =~ /Python(?!!)/) {
+	print("$matches matches\n");
+} else {
+	print("$matches does not match\n");
+}
+
+$matches = "Python?";
+if ($matches =~ /Python(?!!)/) {
+	print("$matches matches\n");
+} else {
+	print("$matches does not match\n");
+}
+	
+print("Enter recipient's email: ");
+$to = <STDIN>;
+print("Enter sender's email: ");
+$from = <STDIN>;
+$subject = "Test Email";
+$message = "This is a test.\n";
+
+# Would probably work, but I don't have a mail server running, don't really want to bother with it
+
+#open(MAIL, "|/usr/sbin/sendmail -t") or die("Issue with sendmail? $!\n");
+
+#print MAIL "To: $to\n";
+#print MAIL "From: $from\n";
+#print MAIL "Subject: $subject\n\n";
+#print MAIL $message;
+
+#close(MAIL);
+#print("Email sent");
+
+socket(SOCKET, PF_INET, SOCK_STREAM, (getprotobyname('tcp'))[2]);
+
+$port = 5004;
+$server_ip_address = "127.0.0.1";
+bind(SOCKET, pack_sockaddr_in($port, inet_aton($server_ip_address))) or die("Error binding to $port, $!\n");
+
+#With the socket bound successfully, time to listen for requests
+listen(SOCKET, 1);
+
+#while (1) {
+	#accept(NEW_SOCKET, SOCKET);
+	# Do the server stuff
+#}
